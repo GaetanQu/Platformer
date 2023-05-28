@@ -6,5 +6,7 @@ class Rect_Platform():
         self.Surface.fill(color)
         self.rect = self.Surface.get_rect()
         self.rect.topleft = pos
+        self.pos_x = pos[0]
+        self.pos_y = pos[1]
 
         screen.blit(self.Surface, pos)
