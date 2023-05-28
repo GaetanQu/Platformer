@@ -8,5 +8,7 @@ class Rect_Platform():
         self.rect.topleft = pos
         self.pos_x = pos[0]
         self.pos_y = pos[1]
+        self.width = size[0]
+        self.height = size[1]
 
         screen.blit(self.Surface, pos)

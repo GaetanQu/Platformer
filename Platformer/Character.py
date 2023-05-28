@@ -9,10 +9,7 @@ import Levels.Creator
 
 class Player():
     def __init__(self, screen, pos_init):
-        self.life = 3
-        self.money = 0
-        self.damage = 1
-        self.velocity = 10
+        self.velocity = 7
         self.pos_x = pos_init[0]
         self.pos_y = pos_init[1]
         self.sprite = pygame.Surface((50,50))
@@ -22,17 +19,46 @@ class Player():
         self.jump_velocity = 0
         self.is_jumping = False
         self.screen = screen
+        self.ability_to_move_right = True
+        self.ability_to_move_left = True
 
-    def move(self, keys, platforms):
 
-        self.rect.topleft = (self.pos_x, self.pos_y)
+    def move(self, keys, platforms):    #La methode move ne boucle pas, elle est appelee dans une boucle
+
+        self.rect.topleft = (self.pos_x, self.pos_y)    #A chaque iteration, on deplace la zone de collision du joueur
+
+        """
+        on teste les collisions
+        si collision => 
+            on tp pour que ce soit clean                    j'aurais bien ajoute la velocite aux conditions mais apres ca fait un ecart c'est moche
+        sinon =>
+            on fait bouger le joueur
+        """
 
         if keys[pygame.K_d]:
-            self.pos_x += self.velocity
+            self.ability_to_move_right = True   #Permet de reset le droit de se deplacer vers la droite, notamment suite a une chute lorsqu'on s'est pris un obstacle volant
+            self.ability_to_move_left = True #Si on se deplace vers la droite, par defaut on doit pouvoir se deplacer vers la gauche apres
+            for platform in platforms:      #On isole chaque plateforme pour en tester les collisions avec l'objet Player
+                for i in range (0,self.sprite.get_height()):
+                    if platform.rect.collidepoint(self.pos_x + self.sprite.get_width(), self.pos_y + i):   #On teste les collisions pour la ligne de droite du rect
+                        self.ability_to_move_right = False      #Si il est colle, il peut plus bouger, il suffit d'une seule plateforme
+                        self.pos_x -= abs(self.pos_x + self.sprite.get_width() - platform.pos_x)    #On tp le joueur de sorte qu'il traverse pas la plateforme
+            if self.ability_to_move_right == True :
+                self.pos_x += self.velocity
 
         if keys[pygame.K_q]:
-            self.pos_x -= self.velocity
+            self.ability_to_move_left = True
+            self.ability_to_move_right = True
+            for platform in platforms:
+                for i in range (0, self.sprite.get_height()):
+                    if platform.rect.collidepoint(self.pos_x -1, self.pos_y + i):
+                        self.pos_x += abs(self.pos_x - (platform.pos_x + 100))
+                        self.ability_to_move_left = False
 
+            if self.ability_to_move_left == True :
+                self.pos_x -= self.velocity
+
+        
         if keys[pygame.K_SPACE] or self.is_jumping:
             if not self.is_jumping and self.jump_ability == True:
                 self.jump_velocity = 10
