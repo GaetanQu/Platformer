@@ -5,7 +5,6 @@ import Settings
 FPS = int(Settings.read()["FPS"])
 
 clock = pygame.time.Clock()
-import Levels.Creator
 
 class Player():
     def __init__(self, screen, pos_init):
@@ -52,7 +51,7 @@ class Player():
             for platform in platforms:
                 for i in range (0, self.sprite.get_height()):
                     if platform.rect.collidepoint(self.pos_x -1, self.pos_y + i):
-                        self.pos_x += abs(self.pos_x - (platform.pos_x + 100))
+                        self.pos_x += abs(self.pos_x - (platform.pos_x + platform.width))
                         self.ability_to_move_left = False
 
             if self.ability_to_move_left == True :

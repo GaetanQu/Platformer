@@ -1,7 +1,7 @@
-import Levels.Creator
 import pygame
 import Character
 import Settings
+import Level.Generator
 
 settings_list = Settings.read()
 
@@ -20,7 +20,7 @@ def Play(screen):
                 running = False
 
         screen.fill((0,0,0))
-        platforms = Levels.Creator.generate(screen)
+        platforms = Level.Generator.launch(screen)
 
         keys = pygame.key.get_pressed()
 
