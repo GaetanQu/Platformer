@@ -19,7 +19,7 @@ class Player():
         self.sprite.fill((255,255,255))
         self.rect = self.sprite.get_rect()
         self.jump_ability = False
-        self.jump_velocity = 10
+        self.jump_velocity = 0
         self.is_jumping = False
         self.screen = screen
 
@@ -34,15 +34,17 @@ class Player():
             self.pos_x -= self.velocity
 
         if keys[pygame.K_SPACE] or self.is_jumping:
+            if not self.is_jumping and self.jump_ability == True:
+                self.jump_velocity = 10
             self.jump()
 
         gravity = True
         for platform in platforms:
-            if platform.rect.collidepoint(self.pos_x + 50, self.pos_y + 50) or platform.rect.collidepoint(self.pos_x, self.pos_y + 50):
+            if (platform.rect.collidepoint(self.pos_x + 50, self.pos_y + 50) or platform.rect.collidepoint(self.pos_x, self.pos_y + 50)) and not self.is_jumping:
                 gravity = False
                 self.is_jumping = False
                 self.jump_ability = True
-                self.jump_velocity = 10
+                self.jump_velocity = 0
                 
         if gravity == True and not self.is_jumping:
             if self.jump_velocity < 10:
@@ -66,6 +68,7 @@ class Player():
             else:
                 self.is_jumping = False
 
+
 class Ennemy():
     def __init__(self, damage, pos):
         self.pos = pos
@@ -80,7 +83,7 @@ class Ennemy():
         player.life -= self.damage
 
     def is_killed(self, player):
-        if self.rect.collidepoint(player.pos_x + 50, player.pos_y + 50) or self.rect.collidepoint(player.pos_x, player.pos_y+50):
+        if (self.rect.collidepoint(player.pos_x + 50, player.pos_y + 50) or self.rect.collidepoint(player.pos_x, player.pos_y+50)) and player.is_jumping == False:
             self.is_alive = False
             player.jump_ability = True
             player.jump()
