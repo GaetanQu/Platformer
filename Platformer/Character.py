@@ -1,3 +1,4 @@
+from math import *
 import pygame
 
 import Settings
@@ -8,96 +9,146 @@ clock = pygame.time.Clock()
 
 class Player():
     def __init__(self, screen, pos_init):
-        self.velocity = 7
+
+        self.screen = screen
+
+        self.x_velocity = 5
+        self.y_velocity = 0
         self.pos_x = pos_init[0]
         self.pos_y = pos_init[1]
-        self.sprite = pygame.Surface((50,50))
-        self.sprite.fill((255,255,255))
-        self.rect = self.sprite.get_rect()
+
+        self.orientation = "right"
+
+        self.original_sprite = pygame.image.load("img/player.png")
+        self.sprite = self.original_sprite
+        self.original_sprite = pygame.transform.scale(self.original_sprite,(self.original_sprite.get_width()*3, self.original_sprite.get_height()*3))
+        self.rect = self.original_sprite.get_rect()
+
         self.jump_ability = False
-        self.jump_velocity = 0
         self.is_jumping = False
-        self.screen = screen
+        
+        self.colliding_left = False
+        self.colliding_right = False
+        self.colliding_top = False
+        self.colliding_bottom = False
+
         self.ability_to_move_right = True
         self.ability_to_move_left = True
-        self.on_floor = False
 
-
-    def move(self, keys, platforms):    #La methode move ne boucle pas, elle est appelee dans une boucle
-
+        self.is_hooked = False
+        self.rope_length = 0
+        self.grappling_velocity = 0
+        
+    def collisions(self, platforms):
         self.rect.topleft = (self.pos_x, self.pos_y)    #A chaque iteration, on deplace la zone de collision du joueur
 
-        """
-        on teste les collisions
-        si collision => 
-            on tp pour que ce soit clean                    j'aurais bien ajoute la velocite aux conditions mais apres ca fait un ecart c'est moche
-        sinon =>
-            on fait bouger le joueur
-        """
+        self.colliding_left = False
+        self.colliding_right = False
+        self.colliding_top = False
+        self.colliding_bottom = False
 
-        self.on_floor = False
         for platform in platforms:
-            for i in range(0,self.sprite.get_width()):
-                if platform.rect.collidepoint(self.pos_x + i, self.pos_y+self.sprite.get_height()) and not self.is_jumping:
-                    self.on_floor = True
+            for i in range (self.x_velocity,self.sprite.get_width()-self.x_velocity):
+                if platform.rect.collidepoint(self.pos_x + i, self.pos_y + self.sprite.get_height()):
+                    self.colliding_bottom = True
+                    self.is_jumping = False
                     self.jump_ability = True
-                    self.jump_velocity = 0
-                    self.pos_y -= abs(platform.pos_y - (self.pos_y + self.sprite.get_height()))
+                    self.pos_y = platform.pos_y - self.sprite.get_height()
+                    self.y_velocity = 0
 
+                if platform.rect.collidepoint(self.pos_x + i, self.pos_y):
+                    self.colliding_top = True
+                    self.pos_y = platform.pos_y + platform.Surface.get_height() +1
+
+            for i in range (int(self.sprite.get_height() - self.x_velocity)):
+                if platform.rect.collidepoint(self.pos_x + self.sprite.get_width(), self.pos_y +i):
+                    self.colliding_right = True
+                    self.pos_x = platform.pos_x - self.sprite.get_width() + 1
+
+                if platform.rect.collidepoint(self.pos_x, self.pos_y + i):
+                    self.colliding_left = True
+                    self.pos_x = platform.pos_x+platform.width - 1
+
+        if not self.colliding_bottom:
+            self.jump_ability = False
+
+    def sprite_animation(self):
+        if self.orientation == "left":
+            self.sprite = pygame.transform.flip(self.original_sprite, True, False)
+        else:
+            self.sprite = self.original_sprite
+
+    def move(self, keys, platforms):    #La methode move ne boucle pas, elle est appelee dans une boucle
+        self.gravity(platforms)
+        self.collisions(platforms)
 
         if keys[pygame.K_d]:
-            self.ability_to_move_right = True   #Permet de reset le droit de se deplacer vers la droite, notamment suite a une chute lorsqu'on s'est pris un obstacle volant
-            self.ability_to_move_left = True #Si on se deplace vers la droite, par defaut on doit pouvoir se deplacer vers la gauche apres
-            for platform in platforms:      #On isole chaque plateforme pour en tester les collisions avec l'objet Player
-                for i in range (1,self.sprite.get_height()):
-                    if platform.rect.collidepoint(self.pos_x + self.sprite.get_width(), self.pos_y + i):   #On teste les collisions pour la ligne de droite du rect
-                        self.ability_to_move_right = False      #Si il est colle, il peut plus bouger, il suffit d'une seule plateforme
-                        self.pos_x -= abs(self.pos_x + self.sprite.get_width() - platform.pos_x)    #On tp le joueur de sorte qu'il traverse pas la plateforme
-            if self.ability_to_move_right == True :
-                self.pos_x += self.velocity
+            self.orientation = "right"
+            avancer = True
+            pos_x = self.pos_x
+            for i in range (int(self.x_velocity)):
+                self.pos_x += 1
+                self.collisions(platforms)
+                if self.colliding_right :
+                    avancer = False
+            self.pos_x = pos_x
+            if avancer:
+                self.pos_x += self.x_velocity
 
         if keys[pygame.K_q]:
-            self.ability_to_move_left = True
-            self.ability_to_move_right = True
-            for platform in platforms:
-                for i in range (1,self.sprite.get_height()):
-                    if platform.rect.collidepoint(self.pos_x -1, self.pos_y + i):
-                        self.pos_x += abs(self.pos_x - (platform.pos_x + platform.width))
-                        self.ability_to_move_left = False
+            self.orientation = "left"
+            avancer = True
+            pos_x = self.pos_x
+            for i in range(int(self.x_velocity)):
+                self.pos_x-=1
+                self.collisions(platforms)
+                if self.colliding_left:
+                    avancer = False
+            self.pos_x = pos_x
+            if avancer == True:
+                self.pos_x -= self.x_velocity
 
-            if self.ability_to_move_left == True :
-                self.pos_x -= self.velocity
-
-        if keys[pygame.K_SPACE] or self.is_jumping:     #permet de sauter, on verifie si le player est deha en train de sauter afin de continuer ce saut
-            if not self.is_jumping and self.jump_ability == True:   #Si il n'est pas en train de sauter, alors on initialise le saut
-                self.jump_velocity = 10
+        if keys[pygame.K_SPACE] and self.colliding_bottom or self.is_jumping:     #On verifie si le joueur veut sauter ou est deja en train de sauter
+            self.pos_y -= 2
             self.jump()
 
-        if not self.on_floor and not self.is_jumping:
-            if self.jump_velocity < 10:
-                self.jump_velocity += 0.2
-            self.pos_y += self.jump_velocity
-
+    #La fonction de saut sera appelee en boucle jusqu'a ce que le Player aie atteint le point haut de son saut
     def jump(self):
-        if self.jump_ability or self.is_jumping:
-            if self.jump_velocity > 0:
+        if self.jump_ability and not self.colliding_top:
+            
+            self.pos_y += self.y_velocity                           #On augmente la hauteur du sprite de la vitesse, sachant que la vitesse depend de la gravite
 
+            if not self.is_jumping :
                 self.is_jumping = True
-                self.jump_ability = False
+                self.y_velocity = -7
 
-                self.jump_velocity -= 0.2
-                self.pos_y -= self.jump_velocity
 
-                pygame.draw.rect(self.screen, (0,0,0), self.rect)
-                self.screen.blit(self.sprite, (self.pos_x, self.pos_y))
-                self.rect.topleft = (self.pos_x, self.pos_y)
-                pygame.display.update(self.rect)
-            else:
-                self.is_jumping = False
+            pygame.draw.rect(self.screen, (0,0,0), self.rect)
+            self.screen.blit(self.sprite, (self.pos_x, self.pos_y))
+            self.rect.topleft = (self.pos_x, self.pos_y)
+            pygame.display.update(self.rect)
+
+
+    def grappling(self, hook_pos, platforms):
+        pass
+
+    def norm(self, posA, posB):
+        return sqrt((posB[0] - posA[0])**2 + (posB[1] - posA[1])**2)
+
+    def gravity(self, platforms):
+        if not self.colliding_bottom:       #Si il n'y a pas de collision avec le dessous du sprite //bug pour les petites plateformes
+            if self.y_velocity < 10 :       #Si la vitesse est inferieure a 9px/frame
+                for i in range (int(self.y_velocity)):
+                    self.pos_y += 1
+                    self.collisions(platforms)
+                self.y_velocity += 0.2      #On ajoute 0.2 = la vitesse
+            self.pos_y += self.y_velocity   #On fait descendre le sprite de la valeur de la vitesse
 
 class Ennemy():
     def __init__(self, damage, pos):
         self.pos = pos
+        self.pos_x = pos[0]
+        self.pos_y = pos[1]
         self.damage = damage
         self.sprite = pygame.Surface((10,10))
         self.sprite.fill((255,0,0))
@@ -109,9 +160,11 @@ class Ennemy():
         player.life -= self.damage
 
     def is_killed(self, player):
-        for i in range (0, player.sprite.get_width()):
-            if self.rect.collidepoint(player.pos_x + i, player.pos_y + player.sprite.get_height()) and player.is_jumping == False:
+        for i in range (player.sprite.get_width()):
+            if self.rect.collidepoint(player.pos_x + i, player.pos_y + player.sprite.get_height()):
                 self.is_alive = False
+                player.pos_y -= player.y_velocity 
                 player.jump_ability = True
+                player.is_jumping = False
                 player.jump()
             
