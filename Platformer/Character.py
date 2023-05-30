@@ -58,7 +58,9 @@ class Player():
 
                 if platform.rect.collidepoint(self.pos_x + i, self.pos_y):
                     self.colliding_top = True
-                    self.pos_y = platform.pos_y + platform.Surface.get_height() +1
+                    self.jump_ability = False
+                    self.y_velocity = 0
+                    self.pos_y = platform.pos_y + platform.Surface.get_height() +10
 
             for i in range (int(self.sprite.get_height() - self.x_velocity)):
                 if platform.rect.collidepoint(self.pos_x + self.sprite.get_width(), self.pos_y +i):
@@ -116,12 +118,12 @@ class Player():
     def jump(self):
         if self.jump_ability and not self.colliding_top:
             
-            self.pos_y += self.y_velocity                           #On augmente la hauteur du sprite de la vitesse, sachant que la vitesse depend de la gravite
+            if self.is_jumping:
+                self.pos_y += self.y_velocity                           #On augmente la hauteur du sprite de la vitesse, sachant que la vitesse depend de la gravite
 
             if not self.is_jumping :
                 self.is_jumping = True
                 self.y_velocity = -7
-
 
             pygame.draw.rect(self.screen, (0,0,0), self.rect)
             self.screen.blit(self.sprite, (self.pos_x, self.pos_y))
