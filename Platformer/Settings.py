@@ -4,8 +4,8 @@ Le but ici est d'enregistrer les settings sur un fichier et de les mettre dans u
 Il sera possible de les actualiser
 
 Les lignes ressembleront a ca :
-
     parametre;valeur
+
 '''
 
 def read():
