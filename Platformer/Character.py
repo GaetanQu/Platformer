@@ -1,5 +1,6 @@
 from math import *
 import pygame
+from Maths import *
 
 import Settings
 
@@ -20,12 +21,15 @@ class Player():
         self.orientation = "right"
 
         self.original_sprite = pygame.image.load("img/player.png")
-        self.sprite = self.original_sprite
         self.original_sprite = pygame.transform.scale(self.original_sprite,(self.original_sprite.get_width()*3, self.original_sprite.get_height()*3))
+        self.sprite = self.original_sprite
         self.rect = self.original_sprite.get_rect()
+        self.width, self.height = self.sprite.get_size()
+
 
         self.jump_ability = False
         self.is_jumping = False
+        self.jump_intensity = -7
         
         self.colliding_left = False
         self.colliding_right = False
@@ -48,12 +52,12 @@ class Player():
         self.colliding_bottom = False
 
         for platform in platforms:
-            for i in range (self.x_velocity,self.sprite.get_width()-self.x_velocity):
-                if platform.rect.collidepoint(self.pos_x + i, self.pos_y + self.sprite.get_height()):
+            for i in range (self.x_velocity,self.width-self.x_velocity):
+                if platform.rect.collidepoint(self.pos_x + i, self.pos_y + self.height):
                     self.colliding_bottom = True
                     self.is_jumping = False
                     self.jump_ability = True
-                    self.pos_y = platform.pos_y - self.sprite.get_height()
+                    self.pos_y = platform.pos_y - self.height
                     self.y_velocity = 0
 
                 if platform.rect.collidepoint(self.pos_x + i, self.pos_y):
@@ -62,10 +66,10 @@ class Player():
                     self.y_velocity = 0
                     self.pos_y = platform.pos_y + platform.Surface.get_height() +10
 
-            for i in range (int(self.sprite.get_height() - self.x_velocity)):
-                if platform.rect.collidepoint(self.pos_x + self.sprite.get_width(), self.pos_y +i):
+            for i in range (int(self.height - self.x_velocity)):
+                if platform.rect.collidepoint(self.pos_x + self.width, self.pos_y +i):
                     self.colliding_right = True
-                    self.pos_x = platform.pos_x - self.sprite.get_width() + 1
+                    self.pos_x = platform.pos_x - self.width + 1
 
                 if platform.rect.collidepoint(self.pos_x, self.pos_y + i):
                     self.colliding_left = True
@@ -114,7 +118,7 @@ class Player():
             self.pos_y -= 2
             self.jump()
 
-    #La fonction de saut sera appelee en boucle jusqu'a ce que le Player aie atteint le point haut de son saut
+    
     def jump(self):
         if self.jump_ability and not self.colliding_top:
             
@@ -123,19 +127,19 @@ class Player():
 
             if not self.is_jumping :
                 self.is_jumping = True
-                self.y_velocity = -7
+                self.y_velocity = self.jump_intensity
 
             pygame.draw.rect(self.screen, (0,0,0), self.rect)
             self.screen.blit(self.sprite, (self.pos_x, self.pos_y))
             self.rect.topleft = (self.pos_x, self.pos_y)
             pygame.display.update(self.rect)
 
+        if not pygame.key.get_pressed()[pygame.K_SPACE]:
+            self.jump_ability = False
+            self.is_jumping = False
 
     def grappling(self, hook_pos, platforms):
         pass
-
-    def norm(self, posA, posB):
-        return sqrt((posB[0] - posA[0])**2 + (posB[1] - posA[1])**2)
 
     def gravity(self, platforms):
         if not self.colliding_bottom:       #Si il n'y a pas de collision avec le dessous du sprite //bug pour les petites plateformes
@@ -162,11 +166,8 @@ class Ennemy():
         player.life -= self.damage
 
     def is_killed(self, player):
-        for i in range (player.sprite.get_width()):
-            if self.rect.collidepoint(player.pos_x + i, player.pos_y + player.sprite.get_height()):
+        for i in range (player.width):
+            if self.rect.collidepoint(player.pos_x + i, player.pos_y + player.height) and player.y_velocity > 0:
                 self.is_alive = False
-                player.pos_y -= player.y_velocity 
-                player.jump_ability = True
-                player.is_jumping = False
-                player.jump()
-            
+                player.y_velocity = player.jump_intensity
+                player.jump()  
